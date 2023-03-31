@@ -9,10 +9,6 @@ class PostSerializer(serializers.ModelSerializer):
     """Сериализатор для модели Post."""
 
     author = SlugRelatedField(slug_field='username', read_only=True)
-    group = serializers.PrimaryKeyRelatedField(
-        required=False,
-        queryset=Group.objects.all(),
-    )
 
     class Meta:
         fields = '__all__'
@@ -23,7 +19,8 @@ class CommentSerializer(serializers.ModelSerializer):
     """Сериализатор для модели Comment."""
 
     author = serializers.SlugRelatedField(
-        read_only=True, slug_field='username',
+        read_only=True,
+        slug_field='username',
     )
 
     class Meta:
@@ -41,7 +38,8 @@ class FollowSerializer(serializers.ModelSerializer):
         slug_field='username',
     )
     following = SlugRelatedField(
-        queryset=User.objects.all(), slug_field='username',
+        queryset=User.objects.all(),
+        slug_field='username',
     )
 
     class Meta:
@@ -49,12 +47,25 @@ class FollowSerializer(serializers.ModelSerializer):
         model = Follow
         validators = [
             UniqueTogetherValidator(
-                queryset=Follow.objects.all(), fields=('user', 'following'),
+                queryset=Follow.objects.all(),
+                fields=('user', 'following'),
             ),
         ]
 
-    def validate(self, data):
-        if self.context['request'].user != data.get('following'):
+    def validate_following(self, data: User) -> User:
+        """Валидация запроса на подписку на самого себя.
+
+        Args:
+            data: Экземляр класса `User`.
+
+        Returns:
+            В случае успешной валидации возвращает экземляр класса `User`.
+
+        Raises:
+            ValidationError: Ошибка при валидации.
+
+        """
+        if data != self.context['request'].user:
             return data
         raise serializers.ValidationError('Нельзя подписаться на себя')
 

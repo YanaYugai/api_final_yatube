@@ -1,6 +1,7 @@
-from typing import Any, Union
+from typing import Union
 
 from rest_framework import permissions
+from rest_framework.request import Request
 
 from posts.models import Comment, Post
 
@@ -8,33 +9,22 @@ from posts.models import Comment, Post
 class IsOwnerOrReadOnly(permissions.BasePermission):
     """Разрешение редактирования только владельцам."""
 
-    def has_permission(self, request, view) -> bool:
-        """Проверка прав пользователя.
-
-        Args:
-            bool: Возвращаемое зачение. True - функция сработала удачно,
-        иначе False.
-
-        """
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        return request.user.is_authenticated
-
     def has_object_permission(
-        self,
-        request,
-        _: Any,
-        obj: Union[Post, Comment],
+        self, request: Request, view: None, obj: Union[Post, Comment],
     ) -> bool:
         """Проверка прав пользователя на доступ к объекту.
 
         Args:
-            obj(Union[Post, Comment]): Экземляр класса POst, Comment.
+            request: Запрос пользователя.
+            view: Неиспользуемая переменная.
+            obj: Экземляр класса `Post`, `Comment`.
+
         Returns:
-            bool: Возвращаемое зачение. True - функция сработала удачно,
-        иначе False.
+            True - функция сработала удачно, иначе False.
 
         """
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        return obj.author == request.user
+        del view
+        return (
+            obj.author == request.user
+            or request.method in permissions.SAFE_METHODS
+        )
